@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Restoran Buyurtma</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #f5f4f0;
+      --surface: #ffffff;
+      --border: rgba(0,0,0,0.12);
+      --border-hover: rgba(0,0,0,0.3);
+      --text: #1a1a1a;
+      --text-muted: #666;
+      --text-hint: #999;
+      --success: #1D9E75;
+      --success-bg: #E1F5EE;
+      --warning-bg: #FAEEDA;
+      --warning: #BA7517;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #1a1a18;
+        --surface: #242422;
+        --border: rgba(255,255,255,0.12);
+        --border-hover: rgba(255,255,255,0.3);
+        --text: #f0ede6;
+        --text-muted: #aaa;
+        --text-hint: #666;
+        --success: #5DCAA5;
+        --success-bg: #085041;
+        --warning-bg: #633806;
+        --warning: #FAC775;
+      }
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+    .app { display: grid; grid-template-columns: 1fr 340px; min-height: 100vh; }
+    .left { padding: 1.5rem; overflow-y: auto; }
+    .right { background: var(--surface); border-left: 0.5px solid var(--border); padding: 1.5rem; display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
+    h1 { font-size: 22px; font-weight: 500; margin-bottom: 4px; }
+    .subtitle { font-size: 14px; color: var(--text-muted); margin-bottom: 1.5rem; }
+    .tabs { display: flex; gap: 8px; margin-bottom: 1.5rem; flex-wrap: wrap; }
+    .tab { padding: 6px 14px; border-radius: var(--radius-md); border: 0.5px solid var(--border-hover); font-size: 13px; cursor: pointer; background: var(--surface); color: var(--text-muted); transition: all 0.15s; }
+    .tab.active { background: var(--text); color: var(--surface); border-color: var(--text); }
+    .tab:hover:not(.active) { border-color: var(--border-hover); color: var(--text); }
+    .menu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
+    .menu-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 1rem; cursor: pointer; transition: border-color 0.15s; }
+    .menu-card:hover { border-color: var(--border-hover); }
+    .menu-card.in-cart { border-color: var(--success); }
+    .menu-emoji { font-size: 32px; margin-bottom: 8px; display: block; }
+    .menu-name { font-size: 14px; font-weight: 500; margin-bottom: 4px; }
+    .menu-price { font-size: 13px; color: var(--success); font-weight: 500; }
+    .menu-cat { font-size: 11px; color: var(--text-hint); margin-top: 4px; }
+    .add-btn { margin-top: 10px; width: 100%; padding: 6px; border-radius: var(--radius-md); border: 0.5px solid var(--border-hover); background: transparent; font-size: 12px; cursor: pointer; color: var(--text-muted); transition: all 0.15s; }
+    .add-btn:hover { background: var(--bg); }
+    .add-btn.added { background: var(--success-bg); color: var(--success); border-color: var(--success); }
+    .section-title { font-size: 16px; font-weight: 500; margin-bottom: 1rem; }
+    .cart-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-muted); font-size: 14px; gap: 8px; }
+    .cart-items { flex: 1; overflow-y: auto; margin-bottom: 1rem; }
+    .cart-item { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 0.5px solid var(--border); }
+    .ci-name { font-size: 13px; font-weight: 500; flex: 1; }
+    .ci-price { font-size: 12px; color: var(--text-muted); }
+    .qty-ctrl { display: flex; align-items: center; gap: 6px; }
+    .qty-btn { width: 24px; height: 24px; border-radius: 50%; border: 0.5px solid var(--border-hover); background: transparent; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; color: var(--text); transition: background 0.1s; }
+    .qty-btn:hover { background: var(--bg); }
+    .qty-val { font-size: 13px; min-width: 18px; text-align: center; }
+    .order-form { display: flex; flex-direction: column; gap: 10px; margin-bottom: 1rem; }
+    .order-form input { padding: 9px 12px; border-radius: var(--radius-md); border: 0.5px solid var(--border-hover); font-size: 13px; background: var(--bg); color: var(--text); outline: none; transition: border-color 0.15s; }
+    .order-form input:focus { border-color: var(--text); }
+    .total-row { display: flex; justify-content: space-between; font-size: 15px; font-weight: 500; padding: 10px 0; border-top: 0.5px solid var(--border); margin-bottom: 1rem; }
+    .order-btn { width: 100%; padding: 11px; border-radius: var(--radius-md); border: none; background: var(--text); color: var(--surface); font-size: 14px; font-weight: 500; cursor: pointer; transition: opacity 0.15s; }
+    .order-btn:hover { opacity: 0.85; }
+    .order-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .toast { position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%); background: var(--text); color: var(--surface); padding: 10px 20px; border-radius: var(--radius-md); font-size: 13px; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 999; white-space: nowrap; }
+    .toast.show { opacity: 1; }
+    .info-msg { color: var(--text-muted); font-size: 13px; text-align: center; padding: 2rem; }
+    .err-msg { color: #E24B4A; font-size: 13px; text-align: center; padding: 2rem; }
+    .orders-list { display: flex; flex-direction: column; gap: 10px; }
+    .order-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 1rem; }
+    .order-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+    .order-id { font-size: 13px; font-weight: 500; }
+    .status-badge { font-size: 11px; padding: 3px 8px; border-radius: var(--radius-md); background: var(--warning-bg); color: var(--warning); }
+    .order-info { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
+    .order-total { font-size: 13px; font-weight: 500; margin-top: 6px; color: var(--success); }
+    @media (max-width: 700px) {
+      .app { grid-template-columns: 1fr; }
+      .right { border-left: none; border-top: 0.5px solid var(--border); position: static; height: auto; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="app">
+  <div class="left">
+    <h1>Restoran buyurtma</h1>
+    <p class="subtitle">Menyudan tanlang va buyurtma bering</p>
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('menu', this)">Menyu</button>
+      <button class="tab" onclick="switchTab('orders', this)">Buyurtmalar</button>
+    </div>
+
+    <div id="tab-menu">
+      <div class="tabs" id="cat-tabs" style="margin-bottom:1rem;"></div>
+      <div class="menu-grid" id="menu-grid">
+        <div class="info-msg">Yuklanmoqda...</div>
+      </div>
+    </div>
+
+    <div id="tab-orders" style="display:none;">
+      <div class="orders-list" id="orders-list">
+        <div class="info-msg">Yuklanmoqda...</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="right">
+    <div class="section-title">Savat</div>
+    <div id="cart-empty" class="cart-empty">
+      <span style="font-size:32px;">🛒</span>
+      <span>Savat bo'sh</span>
+      <span style="font-size:12px;color:var(--text-hint);">Menyudan mahsulot tanlang</span>
+    </div>
+    <div id="cart-items" class="cart-items" style="display:none;"></div>
+    <div id="order-section" style="display:none;">
+      <div class="total-row">
+        <span>Jami:</span>
+        <span id="cart-total">0 so'm</span>
+      </div>
+      <div class="order-form">
+        <input id="inp-address" placeholder="Manzil" />
+        <input id="inp-phone" placeholder="Telefon raqam (+998...)" />
+      </div>
+      <button class="order-btn" onclick="placeOrder()">Buyurtma berish</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const API = 'http://127.0.0.1:8000/api/orders';
+  let categories = [];
+  let menuItems = [];
+  let cart = [];
+  let activeCategory = 'all';
+
+  const EMOJIS = {
+    burger: '🍔', pizza: '🍕', salad: '🥗', soup: '🍜',
+    drink: '🥤', coffee: '☕', tea: '🍵', dessert: '🍰',
+    cake: '🧁', ice: '🍦', chicken: '🍗', meat: '🥩',
+    fish: '🐟', pasta: '🍝', rice: '🍚', sandwich: '🥪',
+    taco: '🌮', wrap: '🫔', fries: '🍟', sushi: '🍱',
+  };
+
+  function getEmoji(name) {
+    const lower = (name || '').toLowerCase();
+    for (const [key, emoji] of Object.entries(EMOJIS)) {
+      if (lower.includes(key)) return emoji;
+    }
+    const defaults = ['🍽️','🥘','🫕','🍲','🥙','🧆','🫓','🥚'];
+    return defaults[Math.floor(Math.random() * defaults.length)];
+  }
+
+  async function loadCategories() {
+    try {
+      const r = await fetch(API + '/category');
+      if (!r.ok) return;
+      categories = await r.json();
+      renderCatTabs();
+    } catch(e) {}
+  }
+
+  function renderCatTabs() {
+    const el = document.getElementById('cat-tabs');
+    el.innerHTML = `<button class="tab active" onclick="filterCat('all',this)">Barchasi</button>`;
+    categories.forEach(c => {
+      el.innerHTML += `<button class="tab" onclick="filterCat(${c.id},this)">${c.name}</button>`;
+    });
+  }
+
+  function filterCat(id, el) {
+    activeCategory = id;
+    document.querySelectorAll('#cat-tabs .tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+    renderMenu();
+  }
+
+  async function loadMenu() {
+    try {
+      const r = await fetch(API + '/menuitems');
+      if (!r.ok) throw new Error();
+      menuItems = await r.json();
+      renderMenu();
+    } catch(e) {
+      document.getElementById('menu-grid').innerHTML =
+        '<div class="err-msg">API ga ulanib bo\'lmadi.<br><small>Backend ishga tushirilganmi?</small></div>';
+    }
+  }
+
+  function renderMenu() {
+    const grid = document.getElementById('menu-grid');
+    const items = activeCategory === 'all'
+      ? menuItems
+      : menuItems.filter(m => m.category_id == activeCategory);
+
+    if (!items.length) {
+      grid.innerHTML = '<div class="info-msg">Mahsulot topilmadi</div>';
+      return;
+    }
+
+    grid.innerHTML = items.map(m => {
+      const inCart = cart.some(c => c.id === m.id);
+      const catName = (categories.find(c => c.id === m.category_id) || {}).name || '';
+      return `<div class="menu-card ${inCart ? 'in-cart' : ''}" id="card-${m.id}">
+        <span class="menu-emoji">${getEmoji(m.name)}</span>
+        <div class="menu-name">${m.name || 'Nomi yo\'q'}</div>
+        <div class="menu-price">${Number(m.price || 0).toLocaleString()} so'm</div>
+        ${catName ? `<div class="menu-cat">${catName}</div>` : ''}
+        <button class="add-btn ${inCart ? 'added' : ''}" onclick="addToCart(${m.id})">
+          ${inCart ? '✓ Savatda' : '+ Savatga'}
+        </button>
+      </div>`;
+    }).join('');
+  }
+
+  function addToCart(id) {
+    const item = menuItems.find(m => m.id === id);
+    if (!item) return;
+    const existing = cart.find(c => c.id === id);
+    if (existing) {
+      existing.qty++;
+    } else {
+      cart.push({ ...item, qty: 1 });
+    }
+    renderCart();
+    renderMenu();
+    showToast(`${item.name} savatga qo'shildi`);
+  }
+
+  function changeQty(id, delta) {
+    const idx = cart.findIndex(c => c.id === id);
+    if (idx === -1) return;
+    cart[idx].qty += delta;
+    if (cart[idx].qty <= 0) cart.splice(idx, 1);
+    renderCart();
+    renderMenu();
+  }
+
+  function renderCart() {
+    const empty = document.getElementById('cart-empty');
+    const items = document.getElementById('cart-items');
+    const sec = document.getElementById('order-section');
+
+    if (!cart.length) {
+      empty.style.display = 'flex';
+      items.style.display = 'none';
+      sec.style.display = 'none';
+      return;
+    }
+
+    empty.style.display = 'none';
+    items.style.display = 'block';
+    sec.style.display = 'block';
+
+    const total = cart.reduce((s, c) => s + Number(c.price) * c.qty, 0);
+    items.innerHTML = cart.map(c => `
+      <div class="cart-item">
+        <div style="flex:1;">
+          <div class="ci-name">${c.name}</div>
+          <div class="ci-price">${(Number(c.price) * c.qty).toLocaleString()} so'm</div>
+        </div>
+        <div class="qty-ctrl">
+          <button class="qty-btn" onclick="changeQty(${c.id}, -1)">−</button>
+          <span class="qty-val">${c.qty}</span>
+          <button class="qty-btn" onclick="changeQty(${c.id}, 1)">+</button>
+        </div>
+      </div>`).join('');
+
+    document.getElementById('cart-total').textContent = total.toLocaleString() + ' so\'m';
+  }
+
+  async function placeOrder() {
+    const address = document.getElementById('inp-address').value.trim();
+    const phone = document.getElementById('inp-phone').value.trim();
+
+    if (!address) { showToast('Manzilni kiriting'); return; }
+    if (!phone) { showToast('Telefon raqamni kiriting'); return; }
+    if (!cart.length) { showToast('Savat bo\'sh'); return; }
+
+    const btn = document.querySelector('.order-btn');
+    btn.disabled = true;
+    btn.textContent = 'Yuborilmoqda...';
+
+    try {
+      const total = cart.reduce((s, c) => s + Number(c.price) * c.qty, 0);
+
+      const orderRes = await fetch(API + '/order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ address, phone_number: phone, total, status: 'pending' })
+      });
+
+      if (!orderRes.ok) {
+        const err = await orderRes.json().catch(() => ({}));
+        throw new Error(err.detail || 'Buyurtma yaratishda xato');
+      }
+
+      const order = await orderRes.json();
+
+      for (const item of cart) {
+        const itemRes = await fetch(API + '/orderitem', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            menu_item: item.id,
+            quantity: item.qty,
+            order_id: order.id
+          })
+        });
+        if (!itemRes.ok) console.warn('OrderItem qo\'shishda xato:', item.name);
+      }
+
+      cart = [];
+      renderCart();
+      renderMenu();
+      document.getElementById('inp-address').value = '';
+      document.getElementById('inp-phone').value = '';
+      showToast('Buyurtma muvaffaqiyatli yuborildi!');
+
+    } catch(e) {
+      showToast('Xato: ' + e.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Buyurtma berish';
+    }
+  }
+
+  async function loadOrders() {
+    const el = document.getElementById('orders-list');
+    el.innerHTML = '<div class="info-msg">Yuklanmoqda...</div>';
+    try {
+      const r = await fetch(API + '/order');
+      if (!r.ok) throw new Error();
+      const orders = await r.json();
+      if (!orders.length) {
+        el.innerHTML = '<div class="info-msg">Hech qanday buyurtma yo\'q</div>';
+        return;
+      }
+      el.innerHTML = [...orders].reverse().map(o => `
+        <div class="order-card">
+          <div class="order-header">
+            <span class="order-id">#${o.id} — Buyurtma</span>
+            <span class="status-badge">${o.status || 'pending'}</span>
+          </div>
+          <div class="order-info">${o.address}</div>
+          <div class="order-info">${o.phone_number}</div>
+          <div class="order-total">${Number(o.total || 0).toLocaleString()} so'm</div>
+        </div>`).join('');
+    } catch(e) {
+      el.innerHTML = '<div class="err-msg">Buyurtmalar yuklanmadi</div>';
+    }
+  }
+
+  function switchTab(tab, el) {
+    document.querySelectorAll('.tabs:first-of-type .tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('tab-menu').style.display = tab === 'menu' ? 'block' : 'none';
+    document.getElementById('tab-orders').style.display = tab === 'orders' ? 'block' : 'none';
+    if (tab === 'orders') loadOrders();
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2500);
+  }
+
+  loadCategories();
+  loadMenu();
+</script>
+</body>
+</html>

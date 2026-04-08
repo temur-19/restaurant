@@ -4,43 +4,44 @@ from typing import List
 from database import Base
 
 
-class Categories(Base):
-    __tablename__ = 'category'
+class Category(Base):
+    __tablename__ = 'categorys'
     id:Mapped[int] = mapped_column(Integer, primary_key=True)
     name:Mapped[str] = mapped_column(String(length=100), nullable=False)
-    menuitem:Mapped['MenuItems'] = relationship(back_populates='category', cascade='all, delete-orphan')
+    menuitem:Mapped[List['MenuItem']] = relationship(back_populates='category', cascade='all, delete-orphan')
 
 
-class MenuItems(Base):
-    __tablename__ = 'menuitem'
+class MenuItem(Base):
+    __tablename__ = 'menuitems'
     id:Mapped[int] = mapped_column(Integer,primary_key=True)
     name:Mapped[str] = mapped_column(String(length=100), nullable=False)
     price = mapped_column(Numeric(precision=10,scale=2))
-    category_id:Mapped[int]  = mapped_column(ForeignKey('category.id'))
+    category_id:Mapped[int]  = mapped_column(ForeignKey('categorys.id'))
     description:Mapped[str] = mapped_column(String(length=200))
-    category:Mapped['Categories'] = relationship(back_populates='menuitem')
-    orderitem:Mapped['OrderItems'] = relationship(back_populates='menuitem')
+    category:Mapped['Category'] = relationship(back_populates='menuitem')
+    orderitem:Mapped['OrderItem'] = relationship(back_populates='menuitem')
 
 
-class Orders(Base):
-    __tablename__ = 'order'
+class Order(Base):
+    __tablename__ = 'orders'
     id:Mapped[int] = mapped_column(Integer, primary_key=True)
     address:Mapped[str] = mapped_column(String(length=400), nullable=False)
     total = mapped_column(Numeric(precision=10,scale=2))
-    phone_number:Mapped[str] = mapped_column(String(length='20'),nullable=False)
-    orderitem = relationship('OrderItems', back_populates='order')
+    phone_number:Mapped[str] = mapped_column(String(length=20),nullable=False)
+    status:Mapped[str] = mapped_column(String(length=20))
+    orderitem:Mapped[List['OrderItem']] = relationship('OrderItem', back_populates='orders')
     
 
 
 
-class OrderItems(Base):
-    __tablename__ = 'orderitem'
+class OrderItem(Base):
+    __tablename__ = 'orderitems'
     id:Mapped[int] = mapped_column(Integer, primary_key=True)
-    menu_item:Mapped[int] = mapped_column(ForeignKey('menuitem.id'))
+    menu_item:Mapped[int] = mapped_column(ForeignKey('menuitems.id'))
     quantity:Mapped[int] = mapped_column(Integer, default=0)
     total = mapped_column(Numeric(precision=10, scale=2))
-    order_id = mapped_column(ForeignKey('order.id'), unique=True)
-    order = relationship("Orders", back_populates="orderitem")    
-    menuitem:Mapped[List['MenuItems']] = relationship(back_populates='orderitem')
+    order_id: Mapped[int] = mapped_column(ForeignKey('orders.id'))
+    orders: Mapped['Order'] = relationship("Order", back_populates="orderitem") 
+    menuitem:Mapped['MenuItem'] = relationship(back_populates='orderitem')
 
 

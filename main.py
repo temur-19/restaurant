@@ -1,8 +1,9 @@
 from fastapi import FastAPI
 from api import api_router
 from fastapi.middleware.cors import CORSMiddleware
+from database import Base, engine
 
-
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 app.add_middleware(
